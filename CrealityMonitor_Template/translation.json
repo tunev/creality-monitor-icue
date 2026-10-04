@@ -1,0 +1,15 @@
+{
+  "en": {
+    "translation": {
+      "Creality Monitor": "Creality Monitor",
+      "Printer Address": "Printer Address",
+      "WebSocket Port": "WebSocket Port",
+      "Show Camera": "Show Camera",
+      "This PC IP (camera)": "This PC IP (camera)",
+      "Accent Color": "Accent Color",
+      "Printer Connection": "Printer Connection",
+      "Camera": "Camera",
+      "Appearance": "Appearance"
+    }
+  }
+}

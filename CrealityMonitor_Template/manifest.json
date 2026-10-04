@@ -1,0 +1,16 @@
+{
+  "author": "Tunev",
+  "id": "com.tunev.crealitymonitor",
+  "name": "Creality Monitor",
+  "description": "Live print status, temperatures and camera stream from a Creality K-series 3D printer (K1, K1C, K1 Max, K1 SE, K2 Plus) on a Corsair Xeneon Edge card. Should also work with other Creality printers that expose the same local network status API (port 9999) and WebRTC camera (port 8000); LAN Mode must be enabled on the printer.",
+  "version": "1.3.1",
+  "preview_icon": "resources/icon.svg",
+  "min_app_version": "5.47",
+  "min_framework_version": "1.0.0",
+  "os": [
+    { "platform": "windows" }
+  ],
+  "supported_devices": [
+    { "type": "dashboard_lcd" }
+  ]
+}

@@ -1,0 +1,10 @@
+# Packaged widget builds — attached to GitHub Releases instead of committed
+*.icuewidget
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

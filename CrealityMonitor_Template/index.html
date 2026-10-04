@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tr('Creality Monitor')</title>
+  <link rel="icon" type="image/svg+xml" href="resources/icon.svg" />
+
+  <!--
+    CSP: адресът на принтера се въвежда от потребителя, затова не може да се
+    изброи конкретен host. Wildcard в IP октет (ws://192.168.*:*) е НЕВАЛИДЕН
+    CSP синтаксис и се игнорира тихо, затова се използва схемата ws:.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self';
+                 style-src 'self' 'unsafe-inline';
+                 img-src 'self' data:;
+                 media-src 'self' blob: mediastream:;
+                 connect-src 'self' ws: http:;" />
+
+  <meta name="x-icue-property" content="printerHost"
+        data-label="tr('Printer Address')"
+        data-type="textfield"
+        data-default="192.168.0.232" />
+
+  <meta name="x-icue-property" content="printerPort"
+        data-label="tr('WebSocket Port')"
+        data-type="textfield"
+        data-default="9999" />
+
+  <meta name="x-icue-property" content="showCamera"
+        data-label="tr('Show Camera')"
+        data-type="switch"
+        data-default="true" />
+
+  <meta name="x-icue-property" content="pcAddress"
+        data-label="tr('This PC IP (camera)')"
+        data-type="textfield"
+        data-default="192.168.0.100" />
+
+  <meta name="x-icue-property" content="accentColor"
+        data-label="tr('Accent Color')"
+        data-type="color"
+        data-default="#00b3ff" />
+
+  <script type="application/json" id="x-icue-groups">
+    [
+      { "title": "tr('Printer Connection')", "properties": ["printerHost", "printerPort"] },
+      { "title": "tr('Camera')", "properties": ["showCamera", "pcAddress"] },
+      { "title": "tr('Appearance')", "properties": ["accentColor"] }
+    ]
+  </script>
+
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+
+  <div id="app">
+
+    <header id="topbar">
+      <div class="brand">
+        <span class="dot" id="conn-dot"></span>
+        <span class="brand-name" id="model-name">CREALITY</span>
+      </div>
+      <div class="state-pill" id="state-pill">CONNECTING</div>
+      <div class="host" id="host-label">&mdash;</div>
+    </header>
+
+    <main id="grid">
+
+      <section class="card cam-card" id="cam-card">
+        <video id="cam" autoplay muted playsinline></video>
+        <div class="cam-badge" id="cam-badge">CONNECTING</div>
+      </section>
+
+      <section class="card progress-card">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 120 120" class="ring">
+            <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+            <circle class="ring-fg" cx="60" cy="60" r="52" id="ring-fg"></circle>
+          </svg>
+          <div class="ring-center">
+            <span class="pct" id="progress-pct">0</span><span class="pct-sign">%</span>
+            <div class="layer" id="layer-info">LAYER &mdash; / &mdash;</div>
+          </div>
+        </div>
+        <div class="filename" id="filename">No active job</div>
+      </section>
+
+      <section class="card temps-card">
+        <div class="temp-row" id="row-nozzle">
+          <div class="temp-icon nozzle"></div>
+          <div class="temp-body">
+            <div class="temp-label">NOZZLE</div>
+            <div class="temp-value"><span id="noz-cur">0.0</span><span class="unit">&deg;</span>
+              <span class="temp-target">/ <span id="noz-tgt">0</span>&deg;</span>
+            </div>
+            <div class="bar"><div class="bar-fill" id="noz-bar"></div></div>
+          </div>
+        </div>
+
+        <div class="temp-row" id="row-bed">
+          <div class="temp-icon bed"></div>
+          <div class="temp-body">
+            <div class="temp-label">HOTBED</div>
+            <div class="temp-value"><span id="bed-cur">0.0</span><span class="unit">&deg;</span>
+              <span class="temp-target">/ <span id="bed-tgt">0</span>&deg;</span>
+            </div>
+            <div class="bar"><div class="bar-fill" id="bed-bar"></div></div>
+          </div>
+        </div>
+
+        <div class="temp-mini">
+          <span class="stat-label">CHAMBER</span>
+          <span class="mini-value" id="box-temp">&mdash;</span>
+          <span class="stat-label">FILAMENT</span>
+          <span class="mini-value" id="material">0.0<i>m</i></span>
+        </div>
+      </section>
+
+      <section class="card stats-card">
+        <div class="stat-pair">
+          <div class="stat">
+            <div class="stat-label">ELAPSED</div>
+            <div class="stat-value" id="elapsed">--:--</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">REMAINING</div>
+            <div class="stat-value accent" id="remaining">--:--</div>
+          </div>
+        </div>
+        <div class="stat-small-row">
+          <div class="stat-small">
+            <span class="stat-label">SPEED</span>
+            <span class="stat-value-sm" id="speed">0<i>mm/s</i></span>
+          </div>
+          <div class="stat-small">
+            <span class="stat-label">FLOW</span>
+            <span class="stat-value-sm" id="flow">0<i>mm&sup3;/s</i></span>
+          </div>
+          <div class="stat-small">
+            <span class="stat-label">FAN</span>
+            <span class="stat-value-sm" id="fan">0<i>%</i></span>
+          </div>
+          <div class="stat-small">
+            <span class="stat-label">Z</span>
+            <span class="stat-value-sm" id="zpos">0.00<i>mm</i></span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer id="statusbar">
+      <span id="status-text">Connecting to printer&hellip;</span>
+    </footer>
+
+  </div>
+
+  <!-- icueEvents (onICUEInitialized / onDataUpdated) is wired up in scripts/main.js -->
+  <script src="scripts/main.js"></script>
+</body>
+</html>
