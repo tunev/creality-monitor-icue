@@ -12,7 +12,7 @@ Free, open source, and available on the iCUE Marketplace.
 
 ![Creality Monitor thumbnail](media/thumbnail.png)
 ![Creality Monitor — complete state](media/gallery-complete.png)
-![Creality Monitor — screenshot](media/Screenshot 2026-10-04 100750.png)
+![Creality Monitor — screenshot](media/Screenshot.png)
 
 ## Features
 
