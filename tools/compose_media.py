@@ -1,13 +1,9 @@
-"""Compose marketplace Thumbnail (1920x960) and Gallery (1920x960) images
-from raw widget screenshots, matching the widget's own dark theme.
+"""Composes the Marketplace thumbnail + gallery images (1920x960 PNG) from real renders of
+the widget (see render_shots.py). Each image = real widget screenshot + one short caption.
 
-Usage:
-  1. Open CrealityMonitor_Template/index.html in a browser, inject sample
-     `data`/`settings` and call `render()` to reach the desired visual state
-     (see the session notes for the exact snippets used).
-  2. Save full-page screenshots next to this script (e.g. shot_printing.png,
-     shot_complete.png).
-  3. Run `python tools/compose_media.py` from the repo root.
+Usage (from repo root):
+  python tools/render_shots.py
+  python tools/compose_media.py
 """
 from pathlib import Path
 
@@ -18,7 +14,15 @@ BG_TOP = (10, 13, 18)
 BG_BOTTOM = (5, 7, 10)
 FONT_DIR = r"C:\Windows\Fonts"
 ROOT = Path(__file__).resolve().parent.parent
+SHOTS = Path(__file__).resolve().parent / "_shots"
 MEDIA_DIR = ROOT / "media"
+
+ACCENT_BLUE = (0, 179, 255)
+ACCENT_GREEN = (46, 227, 107)
+ACCENT_AMBER = (255, 176, 32)
+ACCENT_RED = (255, 59, 59)
+
+CARD_W = 1350  # widget card width on the 1920 canvas (16:9 -> 759 tall)
 
 
 def vertical_gradient(size, top, bottom):
@@ -26,53 +30,40 @@ def vertical_gradient(size, top, bottom):
     base = Image.new("RGB", (1, h))
     for y in range(h):
         t = y / max(h - 1, 1)
-        px = tuple(int(top[i] + (bottom[i] - top[i]) * t) for i in range(3))
-        base.putpixel((0, y), px)
+        base.putpixel((0, y), tuple(int(top[i] + (bottom[i] - top[i]) * t) for i in range(3)))
     return base.resize((w, h))
 
 
 def rounded_mask(size, radius):
     mask = Image.new("L", size, 0)
-    d = ImageDraw.Draw(mask)
-    d.rounded_rectangle([0, 0, size[0] - 1, size[1] - 1], radius=radius, fill=255)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, size[0] - 1, size[1] - 1], radius=radius, fill=255)
     return mask
 
 
 def soft_glow(size, color, blur):
     glow = Image.new("RGBA", size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(glow)
-    d.ellipse([size[0] * 0.15, -size[1] * 0.4, size[0] * 0.85, size[1] * 0.6], fill=color)
+    ImageDraw.Draw(glow).ellipse([size[0] * 0.15, -size[1] * 0.4, size[0] * 0.85, size[1] * 0.6], fill=color)
     return glow.filter(ImageFilter.GaussianBlur(blur))
 
 
-def paste_card(canvas, shot_path, accent, scale=1.0, y_offset=0):
+def paste_card(canvas, shot_path, y):
     shot = Image.open(shot_path).convert("RGB")
-    sw, sh = shot.size
-    target_w = int(1660 * scale)
-    target_h = int(sh * (target_w / sw))
-    shot = shot.resize((target_w, target_h), Image.LANCZOS)
-
-    mask = rounded_mask(shot.size, 18)
-    shadow = Image.new("RGBA", (shot.width + 80, shot.height + 80), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shadow)
-    sd.rounded_rectangle([40, 48, 40 + shot.width, 48 + shot.height], radius=22,
-                          fill=(0, 0, 0, 160))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(28))
-
+    shot = shot.resize((CARD_W, round(shot.height * CARD_W / shot.width)), Image.LANCZOS)
+    mask = rounded_mask(shot.size, 20)
+    shadow = Image.new("RGBA", (shot.width + 120, shot.height + 120), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle(
+        [60, 70, 60 + shot.width, 70 + shot.height], radius=24, fill=(0, 0, 0, 170)
+    )
+    shadow = shadow.filter(ImageFilter.GaussianBlur(30))
     x = (W - shot.width) // 2
-    y = (H - shot.height) // 2 + y_offset
-    canvas.paste(shadow, (x - 40, y - 40), shadow)
+    canvas.paste(shadow, (x - 60, y - 60), shadow)
     canvas.paste(shot, (x, y), mask)
-    return x, y, shot.width, shot.height
 
 
-def build(out_path, shot_path, accent, title=None, subtitle=None, badge=None):
+def build(out_name, shot_name, accent, title, subtitle):
     canvas = vertical_gradient((W, H), BG_TOP, BG_BOTTOM).convert("RGBA")
+    canvas.alpha_composite(soft_glow((W, H), accent + (70,), 180))
 
-    glow = soft_glow((W, H), accent + (70,), 180)
-    canvas.alpha_composite(glow)
-
-    # subtle grid texture
     grid = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     gd = ImageDraw.Draw(grid)
     for gx in range(0, W, 64):
@@ -81,48 +72,35 @@ def build(out_path, shot_path, accent, title=None, subtitle=None, badge=None):
         gd.line([(0, gy), (W, gy)], fill=(255, 255, 255, 5))
     canvas.alpha_composite(grid)
 
-    y_offset = 40 if title else 0
-    paste_card(canvas, shot_path, accent, scale=1.0, y_offset=y_offset)
+    paste_card(canvas, SHOTS / shot_name, 168)
 
     draw = ImageDraw.Draw(canvas)
-    if title:
-        font_title = ImageFont.truetype(FONT_DIR + r"\seguibl.ttf", 64)
-        font_sub = ImageFont.truetype(FONT_DIR + r"\segoeui.ttf", 30)
-        tw = draw.textlength(title, font=font_title)
-        draw.text(((W - tw) / 2, 56), title, font=font_title, fill=(255, 255, 255, 255))
-        if subtitle:
-            sw = draw.textlength(subtitle, font=font_sub)
-            draw.text(((W - sw) / 2, 134), subtitle, font=font_sub,
-                       fill=(190, 200, 210, 255))
+    font_title = ImageFont.truetype(FONT_DIR + r"\seguibl.ttf", 62)
+    font_sub = ImageFont.truetype(FONT_DIR + r"\segoeui.ttf", 30)
+    tw = draw.textlength(title, font=font_title)
+    draw.text(((W - tw) / 2, 28), title, font=font_title, fill=(255, 255, 255, 255))
+    sw = draw.textlength(subtitle, font=font_sub)
+    draw.text(((W - sw) / 2, 108), subtitle, font=font_sub, fill=(190, 200, 210, 255))
 
-    if badge:
-        font_badge = ImageFont.truetype(FONT_DIR + r"\seguisb.ttf", 26)
-        bw = draw.textlength(badge, font=font_badge)
-        pad = 18
-        bx0, by0 = W - bw - pad * 2 - 36, H - 70
-        badge_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        bdraw = ImageDraw.Draw(badge_layer)
-        bdraw.rounded_rectangle([bx0, by0, bx0 + bw + pad * 2, by0 + 44], radius=22,
-                                 fill=(10, 13, 18, 210), outline=accent + (255,), width=2)
-        bdraw.text((bx0 + pad, by0 + 9), badge, font=font_badge, fill=(255, 255, 255, 255))
-        canvas.alpha_composite(badge_layer)
-
-    canvas.convert("RGB").save(out_path, quality=95)
-    print("saved", out_path)
+    MEDIA_DIR.mkdir(exist_ok=True)
+    out = MEDIA_DIR / out_name
+    canvas.convert("RGB").save(out, "PNG", optimize=True)
+    print("saved", out)
 
 
-ACCENT_BLUE = (0, 179, 255)
-ACCENT_GREEN = (46, 227, 107)
+build("thumbnail.png", "shot_printing.png", ACCENT_BLUE,
+      "Creality Monitor", "Real-time K-Series printer monitoring for Corsair iCUE")
+build("gallery-1-printing.png", "shot_printing.png", ACCENT_BLUE,
+      "Live print progress", "Progress ring with layer count, elapsed and remaining time")
+build("gallery-2-heating.png", "shot_heating.png", ACCENT_BLUE,
+      "Nozzle and bed temperatures", "Current and target values with progress bars, plus chamber and filament")
+build("gallery-3-paused.png", "shot_paused.png", ACCENT_AMBER,
+      "Printer state at a glance", "Printing, paused, complete or failed \u2014 always visible in the header")
+build("gallery-4-complete.png", "shot_complete.png", ACCENT_GREEN,
+      "Print complete", "Know the moment your print is finished")
+build("gallery-5-failed.png", "shot_failed.png", ACCENT_RED,
+      "Failed prints are flagged", "A red FAILED pill shows the moment something goes wrong")
 
-MEDIA_DIR.mkdir(exist_ok=True)
-
-build(
-    str(MEDIA_DIR / "thumbnail.png"), str(ROOT / "shot_printing.png"), ACCENT_BLUE,
-    title="Creality Monitor",
-    subtitle="Real-time K-Series printer monitoring for Corsair iCUE",
-)
-
-build(
-    str(MEDIA_DIR / "gallery-complete.png"), str(ROOT / "shot_complete.png"), ACCENT_GREEN,
-    badge="Creality Monitor",
-)
+if (SHOTS / "shot_camera.png").exists():
+    build("gallery-6-camera.png", "shot_camera.png", ACCENT_BLUE,
+          "Live camera", "Optional WebRTC camera feed from the printer")

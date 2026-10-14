@@ -8,3 +8,8 @@ __pycache__/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Local marketplace copy and intermediate renders
+marketing/
+tools/_shots/
+tools/camera-frame.*

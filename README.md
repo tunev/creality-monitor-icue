@@ -11,7 +11,8 @@ Home Assistant, no extra software required on the printer or your PC).
 Free, open source, and available on the iCUE Marketplace.
 
 ![Creality Monitor thumbnail](media/thumbnail.png)
-![Creality Monitor — complete state](media/gallery-complete.png)
+![Creality Monitor — printing](media/gallery-1-printing.png)
+![Creality Monitor — complete](media/gallery-4-complete.png)
 ![Creality Monitor — screenshot](media/Screenshot.png)
 
 ## Features
@@ -86,7 +87,8 @@ Import the resulting file in iCUE via **Xeneon Edge → Add Widget → Import**.
 |---|---|
 | `CrealityMonitor_Template/` | Widget source (what gets packaged) |
 | `pack.ps1` | Validates + packages a release build |
-| `tools/compose_media.py` | Generates the marketing screenshots in `media/` from the live widget |
+| `tools/render_shots.py` | Renders the real widget with sample data (headless Edge) into `tools/_shots/` |
+| `tools/compose_media.py` | Composes the 1920x960 marketing images in `media/` from those renders |
 | `media/` | Marketplace/GitHub preview images |
 
 ## Privacy & permissions
