@@ -63,14 +63,17 @@ function fmtClock(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 
 /* ----------------------------------------------------------- state labels */
 
-// Стойности на полето `state` при Creality K-серия
+// Стойности на полето `state` при Creality K-серия (потвърдени на K1C: 5 = пауза, 4 = спрян)
 var STATES = {
     0: { text: "IDLE",     cls: "" },
     1: { text: "PRINTING", cls: "" },
     2: { text: "COMPLETE", cls: "ok" },
     3: { text: "FAILED",   cls: "error" },
-    4: { text: "PAUSED",   cls: "warn" },
-    5: { text: "STOPPED",  cls: "warn" }
+    4: { text: "STOPPED",  cls: "warn" },
+    5: { text: "PAUSED",   cls: "warn" },
+    6: { text: "PAUSING",  cls: "warn" },
+    7: { text: "STOPPING", cls: "warn" },
+    9: { text: "STARTING", cls: "" }
 };
 
 function describeState() {

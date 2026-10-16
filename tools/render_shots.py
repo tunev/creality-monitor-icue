@@ -41,7 +41,7 @@ STATES = {
     "heating": dict(state=1, printProgress=1, layer=2, nozzleTemp=148.3, targetNozzleTemp=220,
                     bedTemp0=47.9, targetBedTemp0=60, printJobTime=95, printLeftTime=5400,
                     realTimeSpeed=40, realTimeFlow=1.2, modelFanPct=0, curPosition="X:30.00 Y:20.00 Z:0.40"),
-    "paused": dict(state=4, printProgress=41, layer=120, nozzleTemp=215.1, targetNozzleTemp=220,
+    "paused": dict(state=5, printProgress=41, layer=120, nozzleTemp=215.1, targetNozzleTemp=220,
                    bedTemp0=60.0, targetBedTemp0=60, printJobTime=2410, printLeftTime=3400,
                    realTimeSpeed=0, realTimeFlow=0, modelFanPct=0),
     "complete": dict(state=2, printProgress=100, layer=292, TotalLayer=292, nozzleTemp=32.1, targetNozzleTemp=0,
