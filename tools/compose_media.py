@@ -89,9 +89,9 @@ def build(out_name, shot_name, accent, title, subtitle):
 
 
 build("thumbnail.png", "shot_printing.png", ACCENT_BLUE,
-      "Creality Monitor", "Real-time K-Series printer monitoring for Corsair iCUE")
+      "Creality Monitor", "Real-time K-Series printer monitoring with live camera for Corsair iCUE")
 build("gallery-1-printing.png", "shot_printing.png", ACCENT_BLUE,
-      "Live print progress", "Progress ring with layer count, elapsed and remaining time")
+      "Live print progress and camera", "Progress ring, layer count, elapsed and remaining time, plus the printer camera")
 build("gallery-2-heating.png", "shot_heating.png", ACCENT_BLUE,
       "Nozzle and bed temperatures", "Current and target values with progress bars, plus chamber and filament")
 build("gallery-3-paused.png", "shot_paused.png", ACCENT_AMBER,
@@ -100,7 +100,3 @@ build("gallery-4-complete.png", "shot_complete.png", ACCENT_GREEN,
       "Print complete", "Know the moment your print is finished")
 build("gallery-5-failed.png", "shot_failed.png", ACCENT_RED,
       "Failed prints are flagged", "A red FAILED pill shows the moment something goes wrong")
-
-if (SHOTS / "shot_camera.png").exists():
-    build("gallery-6-camera.png", "shot_camera.png", ACCENT_BLUE,
-          "Live camera", "Optional WebRTC camera feed from the printer")

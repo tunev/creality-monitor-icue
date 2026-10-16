@@ -76,9 +76,8 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
     index_html = (TEMPLATE / "index.html").read_text(encoding="utf-8")
     frame = next(iter(sorted(Path(__file__).resolve().parent.glob("camera-frame.*"))), None)
-    jobs = [(name, state, None) for name, state in STATES.items()]
-    if frame:
-        jobs.append(("camera", STATES["printing"], frame.name))
+    # the camera card is on by default in the real widget, so every state is rendered with it
+    jobs = [(name, state, frame.name if frame else None) for name, state in STATES.items()]
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "widget"
         shutil.copytree(TEMPLATE, work)
