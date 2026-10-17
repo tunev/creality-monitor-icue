@@ -1,17 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Flat, solid shapes only (no gradients/thin strokes) so the icon still reads
-       correctly once the marketplace rasterizes/sanitizes it down to ~24px. -->
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0b0f14"/>
-
-  <!-- gantry rail -->
-  <rect x="16" y="10" width="32" height="6" rx="3" fill="#29c5ff"/>
-  <!-- extruder body hanging from the rail -->
-  <rect x="27" y="14" width="10" height="10" rx="2" fill="#29c5ff"/>
-  <!-- heated nozzle tip -->
-  <path d="M29 24 L35 24 L32 30 Z" fill="#ff8a3d"/>
-
-  <!-- printed object growing layer by layer -->
-  <rect x="22" y="34" width="20" height="6" rx="2" fill="#29c5ff"/>
-  <rect x="18" y="41" width="28" height="6" rx="2" fill="#29c5ff"/>
-  <rect x="14" y="48" width="36" height="7" rx="2.5" fill="#ff4d6d"/>
+  <!-- iCUE tints this icon itself (grey / black-on-white) and only uses its shape, so: no background
+       rectangle, one flat colour, solid shapes with clear gaps so it still reads at ~24px. -->
+  <g fill="#ffffff">
+    <!-- gantry rail -->
+    <rect x="6" y="6" width="52" height="9" rx="4.5"/>
+    <!-- extruder hanging from the rail -->
+    <rect x="25" y="14" width="14" height="15" rx="3"/>
+    <!-- nozzle tip -->
+    <path d="M27.5 31 L36.5 31 L32 39 Z"/>
+    <!-- printed object, layer by layer -->
+    <rect x="19" y="42" width="26" height="6" rx="2"/>
+    <rect x="9" y="50" width="46" height="8" rx="3"/>
+  </g>
 </svg>
