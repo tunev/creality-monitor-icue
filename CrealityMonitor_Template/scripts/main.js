@@ -73,6 +73,7 @@ var STATES = {
     5: { text: "PAUSED",   cls: "warn" },
     6: { text: "PAUSING",  cls: "warn" },
     7: { text: "STOPPING", cls: "warn" },
+    8: { text: "RESUMING", cls: "" },
     9: { text: "STARTING", cls: "" }
 };
 
