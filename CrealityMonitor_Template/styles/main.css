@@ -8,7 +8,7 @@
   --nozzle: #ff8a3d;
   --bed: #ff4d6d;
 
-  /* Мащабиране спрямо височината на картата (Xeneon Edge = широка ниска лента) */
+  /* РњР°С‰Р°Р±РёСЂР°РЅРµ СЃРїСЂСЏРјРѕ РІРёСЃРѕС‡РёРЅР°С‚Р° РЅР° РєР°СЂС‚Р°С‚Р° (Xeneon Edge = С€РёСЂРѕРєР° РЅРёСЃРєР° Р»РµРЅС‚Р°) */
   font-size: calc(4px + 1.9vh);
 }
 
@@ -46,7 +46,7 @@ html, body {
   border-bottom: 1px solid var(--line);
 }
 
-.brand { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex: 0 0 auto; }
 
 .brand-name {
   font-size: 0.85rem;
@@ -83,6 +83,7 @@ html, body {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 .state-pill.warn  { --accent: #ffb020; }
 .state-pill.error { --accent: #ff3b3b; }
@@ -90,6 +91,9 @@ html, body {
 
 .host {
   margin-left: auto;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: right;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -372,4 +376,43 @@ html, body {
   #grid.has-cam .cam-card { grid-column: 1 / -1; }
   .progress-card { grid-column: 1 / -1; flex-direction: row; gap: 1rem; }
   .progress-card .filename { text-align: left; }
+}
+
+/* ---------------- Portrait (e.g. 720x2560 or 720x1280) ----------------
+ * Everything is stacked in one column and the font scales with the WIDTH
+ * (vh would make the text huge on a tall, narrow card and everything overlapped). */
+@media (max-aspect-ratio: 0.999) {
+  :root { font-size: calc(4px + 2.2vw); }
+
+  #topbar { gap: 0.6rem; padding: 0.5rem 0.8rem; }
+
+  #grid,
+  #grid.has-cam {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .cam-card      { flex: 1.25 1 0; }
+  .progress-card { flex: 1.1 1 0; flex-direction: column; gap: 0.35rem; }
+  .temps-card    { flex: 1 1 0; }
+  .stats-card    { flex: 0.8 1 0; }
+  .progress-card .filename { text-align: center; }
+
+  .stat-small-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 0.45rem; }
+  .stat-value { font-size: 1.6rem; }
+
+  #statusbar { padding: 0.25rem 0.8rem 0.45rem; }
+}
+
+/* Short portrait cards (e.g. 720x900): the stacked content no longer fits, so drop the least
+ * important pieces instead of letting the cards overlap. */
+@media (max-aspect-ratio: 0.999) and (max-height: 1000px) {
+  .cam-card    { flex: 0.9 1 0; }
+  .stats-card  { flex: 1 1 0; }
+  .stat-small-row { display: none; }
+  .temp-mini      { display: none; }
+  .pct   { font-size: 1.9rem; }
+  .layer { font-size: 0.54rem; letter-spacing: 0.08em; margin-top: 0.2rem; }
 }

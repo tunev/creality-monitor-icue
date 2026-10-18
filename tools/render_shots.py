@@ -73,24 +73,34 @@ def harness(index_html: str, state: dict, camera_frame: str | None = None) -> st
 
 
 def main() -> None:
+    import sys
+
     OUT.mkdir(exist_ok=True)
     index_html = (TEMPLATE / "index.html").read_text(encoding="utf-8")
     frame = next(iter(sorted(Path(__file__).resolve().parent.glob("camera-frame.*"))), None)
-    # the camera card is on by default in the real widget, so every state is rendered with it
-    jobs = [(name, state, frame.name if frame else None) for name, state in STATES.items()]
+
+    # --portrait [WxH ...] renders layout checks into tools/_shots/portrait_*.png (marketing shots are untouched)
+    if "--portrait" in sys.argv:
+        sizes = [a for a in sys.argv[sys.argv.index("--portrait") + 1:] if "x" in a] or ["720x2560", "720x1280", "480x1280"]
+        jobs = [(f"portrait_{s}_{n}", st, frame.name if frame else None, tuple(int(v) for v in s.split("x")), 1)
+                for s in sizes for n, st in STATES.items() if n in ("printing", "complete")]
+    else:
+        # the camera card is on by default in the real widget, so every state is rendered with it
+        jobs = [(f"shot_{n}", st, frame.name if frame else None, (VIEW_W, VIEW_H), SCALE) for n, st in STATES.items()]
+
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "widget"
         shutil.copytree(TEMPLATE, work)
         if frame:
             shutil.copy(frame, work / frame.name)
-        for name, state, cam_frame in jobs:
+        for name, state, cam_frame, (w, h), scale in jobs:
             page = work / f"_{name}.html"
             page.write_text(harness(index_html, state, cam_frame), encoding="utf-8")
-            out = OUT / f"shot_{name}.png"
+            out = OUT / f"{name}.png"
             subprocess.run(
                 [EDGE, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-                 f"--screenshot={out}", f"--window-size={VIEW_W},{VIEW_H}",
-                 f"--force-device-scale-factor={SCALE}", "--virtual-time-budget=4000",
+                 f"--screenshot={out}", f"--window-size={w},{h}",
+                 f"--force-device-scale-factor={scale}", "--virtual-time-budget=4000",
                  page.as_uri()],
                 check=True, capture_output=True,
             )
