@@ -171,7 +171,19 @@ function renderOffline(reason) {
  * Токенът се изисква по WebSocket с {"method":"get","params":{"getToken":1}}.
  */
 
-var cam = { pc: null, retry: null, watchdog: null, startedAt: 0 };
+var cam = { pc: null, retry: null, watchdog: null, startedAt: 0, frames: -1, lastProgress: 0, live: false };
+
+var CAM_STALL_WARN_MS = 4000;       // толкова без нови кадри - показваме "NO SIGNAL"
+var CAM_STALL_RESTART_MS = 8000;    // толкова без нови кадри - рестартираме потока
+
+// Брой изобразени кадри; ако браузърът не го дава, ползваме времето на възпроизвеждане
+function videoFrames(v) {
+    if (v.getVideoPlaybackQuality) {
+        var q = v.getVideoPlaybackQuality();
+        if (q && typeof q.totalVideoFrames === "number") return q.totalVideoFrames;
+    }
+    return v.currentTime;
+}
 
 function setCamBadge(text, live) {
     if (!el["cam-badge"]) return;
@@ -265,15 +277,38 @@ function startCamera() {
         if (s === "failed" || s === "closed") scheduleCameraRetry("RECONNECTING");
     };
 
-    // Ако до 12 сек. няма реални кадри - нов опит.
+    // Наблюдава камерата ВЕДНАГА след старта и докато тече: ако кадрите спрат (замръзнало видео при
+    // дълъг печат, паузиран елемент, прекъсната ICE връзка), рестартира потока, вместо да остава
+    // замръзнал до смяна на панела.
+    cam.frames = -1;
+    cam.lastProgress = Date.now();
+    cam.live = false;
     cam.watchdog = setInterval(function () {
         var v = el["cam"];
+        var now = Date.now();
         if (v && v.videoWidth > 0) {
-            clearInterval(cam.watchdog); cam.watchdog = null;
-            setCamBadge("LIVE", true);
+            var f = videoFrames(v);
+            if (f !== cam.frames) {
+                cam.frames = f;
+                cam.lastProgress = now;
+                if (!cam.live) { cam.live = true; setCamBadge("LIVE", true); }
+                return;
+            }
+            if (v.paused) {                       // Chromium пауза при скриване/показване на панела
+                var p = v.play();
+                if (p && p["catch"]) p["catch"](function () { /* autoplay guard */ });
+            }
+            var stalled = now - cam.lastProgress;
+            if (stalled > CAM_STALL_RESTART_MS) {
+                requestVideoToken();
+                scheduleCameraRetry("RECONNECTING");
+            } else if (stalled > CAM_STALL_WARN_MS && cam.live) {
+                cam.live = false;
+                setCamBadge("NO SIGNAL", false);
+            }
             return;
         }
-        if (Date.now() - cam.startedAt > 12000) {
+        if (now - cam.startedAt > 12000) {
             scheduleCameraRetry(settings.pcAddress
                 ? "NO VIDEO " + settings.pcAddress
                 : "SET PC IP");
@@ -307,6 +342,15 @@ function applyCameraVisibility() {
         stopCamera();
     }
 }
+
+// Когато панелът отново стане видим, Chromium може да е спрял видеото
+document.addEventListener("visibilitychange", function () {
+    var v = el["cam"];
+    if (document.visibilityState === "visible" && v && v.srcObject && v.paused) {
+        var p = v.play();
+        if (p && p["catch"]) p["catch"](function () { /* autoplay guard */ });
+    }
+});
 
 /* ------------------------------------------------------------- connection */
 
