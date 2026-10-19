@@ -82,6 +82,10 @@ function describeState() {
     if (err && n(err.errcode, 0) !== 0) {
         return { text: "ERROR " + err.errcode, cls: "error" };
     }
+    // K1C: `state` is already 1 while the printer heats up and auto-levels; that phase is only visible
+    // as withSelfTest 1..99 (100 once done, 0 when idle).
+    var selfTest = n(data.withSelfTest, 0);
+    if (selfTest >= 1 && selfTest <= 99) return { text: "PREPARING", cls: "", preparing: true };
     var s = STATES[n(data.state, -1)];
     return s || { text: "STANDBY", cls: "" };
 }
@@ -131,7 +135,7 @@ function render() {
     el["material"].innerHTML = (n(data.usedMaterialLength) / 1000).toFixed(1) + "<i>m</i>";
 
     // Времена
-    var printing = n(data.state, -1) === 1;
+    var printing = n(data.state, -1) === 1 && !st.preparing;
     setText(el["elapsed"], fmtTime(n(data.printJobTime, -1)));
     var left = n(data.printLeftTime, -1);
     setText(el["remaining"], printing ? fmtTime(left) : "--:--");
