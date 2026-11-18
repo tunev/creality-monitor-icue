@@ -11,16 +11,20 @@
       background: #0b1118;
       color: #e8eef5;
     }
-    body { max-width: 760px; margin: 32px auto; padding: 0 20px; }
+    body { max-width: 900px; margin: 32px auto; padding: 0 20px; }
     h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.1rem; margin: 0 0 10px; }
     p, li { color: #b7c5d3; }
     .panel { padding: 18px; margin: 16px 0; border: 1px solid #263746; border-radius: 10px; background: #111b25; }
     label { display: block; margin-bottom: 6px; font-weight: 700; }
-    input, button { box-sizing: border-box; min-height: 42px; border-radius: 6px; font: inherit; }
-    input { width: min(100%, 340px); padding: 8px 10px; border: 1px solid #526779; background: #081018; color: inherit; }
+    label.inline { display: flex; align-items: center; gap: 8px; font-weight: 400; margin-top: 12px; }
+    input, select, button { box-sizing: border-box; min-height: 42px; border-radius: 6px; font: inherit; }
+    input[type="text"], select { padding: 8px 10px; border: 1px solid #526779; background: #081018; color: inherit; }
+    input[type="text"] { width: min(100%, 340px); }
+    input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; }
     button { padding: 8px 16px; border: 1px solid #00b3ff; background: #07314a; color: white; font-weight: 700; cursor: pointer; }
     button:disabled { opacity: .5; cursor: default; }
-    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
     #status { font-size: 1.1rem; font-weight: 700; }
     #status[data-kind="good"] { color: #4bdb8c; }
     #status[data-kind="warn"] { color: #ffc75e; }
@@ -28,60 +32,113 @@
     dl { display: grid; grid-template-columns: minmax(150px, 1fr) 2fr; gap: 6px 12px; margin: 0; }
     dt { color: #90a4b7; }
     dd { margin: 0; overflow-wrap: anywhere; }
-    #report { width: 100%; min-height: 150px; padding: 10px; border: 1px solid #263746; border-radius: 6px; background: #081018; color: inherit; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #1d2b38; vertical-align: top; }
+    th { color: #90a4b7; }
+    td.value { font-family: Consolas, monospace; overflow-wrap: anywhere; }
+    td.count { text-align: right; white-space: nowrap; }
+    #report { box-sizing: border-box; width: 100%; min-height: 220px; padding: 10px; border: 1px solid #263746; border-radius: 6px; background: #081018; color: inherit; font-family: Consolas, monospace; font-size: .85rem; }
     .small { font-size: .9rem; }
     code { color: #7dd3fc; }
   </style>
 </head>
 <body>
   <h1>Creality Monitor - connection diagnostic</h1>
-  <p>This page checks one printer's status WebSocket from this browser. It does not scan your network,
-     request the camera, or send print, fan, light, calibration or G-code commands.</p>
+  <p>This page checks one printer's status WebSocket from this browser and records every status field the
+     printer reports. It does not scan your network, open the camera, or send print, fan, light,
+     calibration or G-code commands. Tokens, passwords, Wi-Fi names, MAC/serial numbers and addresses are masked.</p>
 
   <section class="panel">
     <label for="host">Printer IPv4 address</label>
     <input id="host" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
            placeholder="e.g. 192.168.0.232">
+    <label class="inline"><input id="token" type="checkbox" checked>
+      Also send the widget's camera-token request (<code>getToken</code>), exactly like the iCUE widget does on connect.
+      The token value is masked in the report.</label>
     <div class="actions">
-      <button id="start" type="button">Start 15-second test</button>
+      <label for="duration" style="margin:0">Duration</label>
+      <select id="duration">
+        <option value="15">15 seconds</option>
+        <option value="60" selected>60 seconds</option>
+        <option value="180">3 minutes</option>
+        <option value="300">5 minutes</option>
+        <option value="600">10 minutes</option>
+      </select>
+      <button id="start" type="button">Start test</button>
       <button id="stop" type="button" disabled>Stop</button>
     </div>
-    <p class="small">Uses <code>ws://&lt;IP&gt;:9999/</code> and sends only the same 5-second heartbeat
-      used by the Creality Monitor widgets and Stream Deck plugins. Leave this page open for 15 seconds.
-      If Chrome asks for permission to connect to devices on your local network, allow it for this test.</p>
+    <p class="small">Uses <code>ws://&lt;IP&gt;:9999/</code> and sends the same 5-second heartbeat used by the
+      Creality Monitor widgets and Stream Deck plugins. Keep this page open until the test finishes.
+      If Chrome asks for permission to connect to devices on your local network, allow it.</p>
   </section>
 
   <section class="panel" aria-live="polite">
     <div id="status" data-kind="neutral">Ready</div>
     <dl>
       <dt>Connection</dt><dd id="connection">Not started</dd>
+      <dt>Elapsed</dt><dd id="elapsed">0 s</dd>
       <dt>Messages received</dt><dd id="messages">0</dd>
       <dt>Heartbeats sent</dt><dd id="heartbeats">0</dd>
       <dt>Text / binary</dt><dd id="types">0 / 0</dd>
-      <dt>JSON messages</dt><dd id="json-count">0</dd>
-      <dt>Latest JSON keys</dt><dd id="keys">—</dd>
-      <dt>Safe status fields</dt><dd id="fields">—</dd>
-      <dt>Last non-JSON frame</dt><dd id="other-frame">—</dd>
+      <dt>JSON / non-JSON</dt><dd id="json-count">0 / 0</dd>
+      <dt>Camera token</dt><dd id="token-state">—</dd>
+      <dt>Distinct fields</dt><dd id="field-count">0</dd>
     </dl>
   </section>
 
   <section class="panel">
-    <label for="report">Diagnostic report (no raw printer messages or camera token)</label>
+    <h2>Printer controls test</h2>
+    <p class="small">While the test runs, use the printer's own touchscreen (light, fans, speed, pause...).
+      Before each action, type what you are about to press and click <b>Add marker</b>, then press it on
+      the printer and wait a few seconds. Every field that changes is recorded below with its old and new value.</p>
+    <div class="actions">
+      <input id="marker-text" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Light ON" disabled>
+      <button id="marker" type="button" disabled>Add marker</button>
+    </div>
+    <label class="inline"><input id="hide-noisy" type="checkbox" checked>
+      Hide constantly changing values (temperatures, timers, position, progress) in the list</label>
+  </section>
+
+  <section class="panel">
+    <h2>Change log (newest first)</h2>
+    <table>
+      <thead><tr><th>Time</th><th>Field</th><th>Old value</th><th>New value</th></tr></thead>
+      <tbody id="changes"><tr><td colspan="4">No changes yet</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>All reported fields (latest value)</h2>
+    <table>
+      <thead><tr><th>Field</th><th>Updates</th><th>Latest value</th></tr></thead>
+      <tbody id="fields"><tr><td colspan="3">No data yet</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <label for="report">Diagnostic report (sensitive values masked)</label>
     <textarea id="report" readonly></textarea>
     <div class="actions">
       <button id="copy" type="button">Copy report</button>
+      <button id="download" type="button">Download full log (.json)</button>
     </div>
     <p id="copy-status" class="small" aria-live="polite"></p>
   </section>
 
-  <p class="small">Browser security can hide the exact reason for a failed WebSocket connection. A failed
-     test in Chrome does not by itself prove a printer firmware issue; the iCUE embedded browser and
-     firewall may behave differently. "Socket opened, no messages" means the browser reached the port,
-     but this test did not receive a status frame. Please send back the report and the printer firmware version.</p>
+  <p class="small">Browser security can hide the exact reason for a failed WebSocket connection. A result in Chrome
+     does not by itself prove how the iCUE embedded browser or the firewall behaves. Please send back the
+     report (or the downloaded file) together with the printer model and firmware version.</p>
 
   <script>
     (function () {
       "use strict";
+
+      var MAX_TIMELINE = 1000;
+      var MAX_STRING = 160;
+      var MAX_CHANGES = 5000;
+      var MAX_REPORT_CHANGES = 400;
+      var NOISY = /temp|time|position|progress|layer|realtime|usedmaterial|curfeedrate|curflowrate|pressure|^t$|heart/i;
+      var SENSITIVE = /token|passw|pwd|secret|ssid|wifi|^mac$|macaddr|mac_addr|serial|^sn$|^ip$|ipaddr|ip_addr|hostname|email|account|username|userid|^user$/i;
 
       var hostInput = document.getElementById("host");
       var startButton = document.getElementById("start");
@@ -89,156 +146,302 @@
       var socket = null;
       var heartbeat = null;
       var deadline = null;
-      var elapsed = null;
-      var reportData = null;
+      var ticker = null;
+      var startedAt = 0;
+      var run = null;
+
+      function $(id) { return document.getElementById(id); }
 
       function setStatus(text, kind) {
-        var node = document.getElementById("status");
-        node.textContent = text;
-        node.setAttribute("data-kind", kind || "neutral");
+        $("status").textContent = text;
+        $("status").setAttribute("data-kind", kind || "neutral");
       }
 
       function validIPv4(value) {
         var parts = value.split(".");
         if (parts.length !== 4) return false;
         for (var i = 0; i < parts.length; i++) {
-          if (!/^\d{1,3}$/.test(parts[i])) return false;
-          var number = Number(parts[i]);
-          if (number < 0 || number > 255) return false;
+          if (!/^\d{1,3}$/.test(parts[i]) || Number(parts[i]) > 255) return false;
         }
         return true;
       }
 
-      function safeFields(message) {
-        var allowed = [
-          "state", "printProgress", "nozzleTemp", "targetNozzleTemp",
-          "bedTemp0", "targetBedTemp0", "boxTemp", "modelFanPct",
-          "caseFanPct", "auxiliaryFanPct"
-        ];
-        var result = [];
-        for (var i = 0; i < allowed.length; i++) {
-          var key = allowed[i];
-          var value = message[key];
-          if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-            result.push(key + "=" + String(value).slice(0, 40));
-          }
-        }
-        return result.length ? result.join("; ") : "No common status fields found";
+      function since() { return Date.now() - startedAt; }
+
+      function log(entry) {
+        if (!run) return;
+        entry.t = since();
+        if (run.timeline.length < MAX_TIMELINE) run.timeline.push(entry);
+        else run.timelineDropped++;
       }
 
-      function refreshReport() {
-        if (!reportData) return;
-        var d = reportData;
+      function sanitize(value, depth) {
+        if (value === null || typeof value === "number" || typeof value === "boolean") return value;
+        if (typeof value === "string") {
+          return value.length > MAX_STRING ? value.slice(0, MAX_STRING) + "… (" + value.length + " chars)" : value;
+        }
+        if (depth > 5) return "[nested]";
+        if (Array.isArray(value)) {
+          var list = [];
+          for (var i = 0; i < value.length && i < 50; i++) list.push(sanitize(value[i], depth + 1));
+          if (value.length > 50) list.push("… (" + value.length + " items)");
+          return list;
+        }
+        if (typeof value === "object") {
+          var out = {};
+          for (var key in value) {
+            if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+            out[key] = SENSITIVE.test(key) ? maskInfo(value[key]) : sanitize(value[key], depth + 1);
+          }
+          return out;
+        }
+        return String(value);
+      }
+
+      function maskInfo(value) {
+        if (value === null || value === undefined || value === "") return "[masked, empty]";
+        return "[masked, " + (typeof value) + "]";
+      }
+
+      function display(value) {
+        var text = typeof value === "string" ? value : JSON.stringify(value);
+        if (text === undefined) text = String(value);
+        return text.length > 400 ? text.slice(0, 400) + "…" : text;
+      }
+
+      function sortedKeys() {
+        return Object.keys(run.fields).sort(function (a, b) {
+          return a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0;
+        });
+      }
+
+      function renderFields() {
+        var body = $("fields");
+        var keys = sortedKeys();
+        body.textContent = "";
+        if (!keys.length) {
+          var empty = document.createElement("tr");
+          var cell = document.createElement("td");
+          cell.colSpan = 3;
+          cell.textContent = "No data yet";
+          empty.appendChild(cell);
+          body.appendChild(empty);
+          return;
+        }
+        for (var i = 0; i < keys.length; i++) {
+          var f = run.fields[keys[i]];
+          var row = document.createElement("tr");
+          var k = document.createElement("td");
+          var c = document.createElement("td");
+          var v = document.createElement("td");
+          k.textContent = keys[i];
+          c.textContent = String(f.count);
+          c.className = "count";
+          v.textContent = display(f.value);
+          v.className = "value";
+          row.appendChild(k); row.appendChild(c); row.appendChild(v);
+          body.appendChild(row);
+        }
+      }
+
+      function seconds(ms) { return "+" + (ms / 1000).toFixed(1) + "s"; }
+
+      function addChange(entry) {
+        entry.t = since();
+        if (run.changes.length < MAX_CHANGES) run.changes.push(entry);
+        else run.changesDropped++;
+      }
+
+      function visibleChanges(hideNoisy) {
+        return run.changes.filter(function (c) {
+          return c.marker !== undefined || !hideNoisy || !NOISY.test(c.key);
+        });
+      }
+
+      function renderChanges() {
+        var body = $("changes");
+        var list = visibleChanges($("hide-noisy").checked);
+        body.textContent = "";
+        if (!list.length) {
+          var empty = document.createElement("tr");
+          var cell = document.createElement("td");
+          cell.colSpan = 4;
+          cell.textContent = "No changes yet";
+          empty.appendChild(cell);
+          body.appendChild(empty);
+          return;
+        }
+        for (var i = list.length - 1; i >= 0 && i >= list.length - 200; i--) {
+          var c = list[i];
+          var row = document.createElement("tr");
+          var cells = c.marker !== undefined
+            ? [seconds(c.t), "MARKER", c.marker, ""]
+            : [seconds(c.t), c.key, c.from, c.to];
+          for (var j = 0; j < cells.length; j++) {
+            var td = document.createElement("td");
+            td.textContent = cells[j];
+            if (j > 1) td.className = "value";
+            if (c.marker !== undefined) td.style.color = "#ffc75e";
+            row.appendChild(td);
+          }
+          body.appendChild(row);
+        }
+      }
+
+      function tokenState() {
+        if (!run.tokenRequested) return "Not requested";
+        if (run.tokenReceived) return "Requested; token received (value masked)";
+        return "Requested; no token yet";
+      }
+
+      function reportText() {
+        var keys = sortedKeys();
         var lines = [
-          "Creality Monitor WebSocket diagnostic",
-          "Printer IP: " + d.host,
+          "Creality Monitor WebSocket diagnostic v2",
+          "Printer IP: " + run.host,
           "Port: 9999",
           "Browser: " + navigator.userAgent,
           "Page protocol: " + location.protocol,
-          "Connection result: " + d.connection,
-          "Elapsed: " + d.elapsed + " seconds",
-          "Heartbeats sent: " + d.heartbeats,
-          "Messages: " + d.messages + " (text " + d.textFrames + ", binary " + d.binaryFrames + ")",
-          "JSON messages: " + d.jsonMessages,
-          "Latest JSON keys: " + (d.keys || "—"),
-          "Safe status fields: " + (d.fields || "—"),
-          "Latest non-JSON frame: " + (d.otherFrame || "—"),
-          "Close code: " + (d.closeCode === null ? "—" : d.closeCode),
-          "Close reason: " + (d.closeReason || "—"),
-          "Error event: " + (d.error ? "yes (browser does not expose details)" : "no"),
+          "Started: " + new Date(startedAt).toISOString(),
+          "Planned duration: " + run.duration + " s",
+          "Connection result: " + run.connection,
+          "Elapsed: " + Math.floor(run.elapsedMs / 1000) + " s",
+          "Opened after: " + (run.openedAtMs === null ? "—" : run.openedAtMs + " ms"),
+          "First message after: " + (run.firstMessageMs === null ? "—" : run.firstMessageMs + " ms"),
+          "Last message at: " + (run.lastMessageMs === null ? "—" : run.lastMessageMs + " ms"),
+          "Heartbeats sent: " + run.heartbeats,
+          "Camera token: " + tokenState(),
+          "Messages: " + run.messages + " (text " + run.textFrames + ", binary " + run.binaryFrames + ")",
+          "JSON messages: " + run.jsonMessages + "; non-JSON: " + run.nonJson.count +
+            (run.nonJson.count ? " (samples: " + run.nonJson.samples.join(", ") + ")" : ""),
+          "Close code: " + (run.closeCode === null ? "—" : run.closeCode),
+          "Close reason: " + (run.closeReason || "—"),
+          "Error event: " + (run.error ? "yes (browser does not expose details)" : "no"),
           "",
-          "Only the printer heartbeat was sent; no control or G-code commands were sent.",
-          "Raw printer messages and camera tokens are not included."
+          "All fields (" + keys.length + "), format: name [updates] = latest value"
         ];
-        document.getElementById("report").value = lines.join("\n");
+        for (var i = 0; i < keys.length; i++) {
+          var f = run.fields[keys[i]];
+          lines.push(keys[i] + " [" + f.count + "] = " + display(f.value));
+        }
+        var changes = visibleChanges(true);
+        var hidden = run.changes.length - changes.length;
+        lines.push("", "Change log (" + changes.length + " entries; " + hidden +
+          " temperature/timer/position changes only in the downloaded log" +
+          (run.changesDropped ? "; " + run.changesDropped + " dropped" : "") + ")");
+        var start = Math.max(0, changes.length - MAX_REPORT_CHANGES);
+        if (start) lines.push("… " + start + " older entries omitted, see downloaded log");
+        for (var j = start; j < changes.length; j++) {
+          var c = changes[j];
+          lines.push(c.marker !== undefined
+            ? seconds(c.t) + " >>> MARKER: " + c.marker
+            : seconds(c.t) + " " + c.key + ": " + c.from + " -> " + c.to);
+        }
+        lines.push("", "Only heartbeat" + (run.tokenRequested ? " and camera-token request were" : " was") +
+          " sent; no control or G-code commands. Sensitive values are masked.");
+        return lines.join("\n");
       }
 
-      function updateCounters() {
-        if (!reportData) return;
-        document.getElementById("messages").textContent = String(reportData.messages);
-        document.getElementById("heartbeats").textContent = String(reportData.heartbeats);
-        document.getElementById("types").textContent =
-          reportData.textFrames + " / " + reportData.binaryFrames;
-        document.getElementById("json-count").textContent = String(reportData.jsonMessages);
-        document.getElementById("keys").textContent = reportData.keys || "—";
-        document.getElementById("fields").textContent = reportData.fields || "—";
-        document.getElementById("other-frame").textContent = reportData.otherFrame || "—";
-        refreshReport();
+      function update() {
+        if (!run) return;
+        if (socket || heartbeat) run.elapsedMs = since();
+        $("elapsed").textContent = Math.floor(run.elapsedMs / 1000) + " s";
+        $("messages").textContent = String(run.messages);
+        $("heartbeats").textContent = String(run.heartbeats);
+        $("types").textContent = run.textFrames + " / " + run.binaryFrames;
+        $("json-count").textContent = run.jsonMessages + " / " + run.nonJson.count;
+        $("token-state").textContent = tokenState();
+        $("field-count").textContent = String(Object.keys(run.fields).length);
+        $("connection").textContent = run.connection;
+        renderFields();
+        renderChanges();
+        $("report").value = reportText();
       }
 
       function stopTest(reason) {
         if (heartbeat) window.clearInterval(heartbeat);
         if (deadline) window.clearTimeout(deadline);
-        heartbeat = null;
-        deadline = null;
+        if (ticker) window.clearInterval(ticker);
+        heartbeat = deadline = ticker = null;
         startButton.disabled = false;
         stopButton.disabled = true;
+        $("marker").disabled = true;
+        $("marker-text").disabled = true;
+        if (run) {
+          run.elapsedMs = since();
+          run.connection = reason;
+          log({ event: "stop", reason: reason });
+        }
         if (socket) {
-          var oldSocket = socket;
+          var old = socket;
           socket = null;
-          oldSocket.onopen = oldSocket.onmessage = oldSocket.onerror = oldSocket.onclose = null;
-          try { oldSocket.close(); } catch (ignore) {}
+          old.onopen = old.onmessage = old.onerror = old.onclose = null;
+          try { old.close(); } catch (ignore) {}
         }
-        if (reportData) {
-          reportData.connection = reason;
-          reportData.elapsed = elapsed ? Math.floor((Date.now() - elapsed) / 1000) : 0;
-          updateCounters();
-        }
+        update();
       }
 
-      function handleFrame(data, isBinary) {
-        reportData.messages++;
-        if (isBinary) reportData.binaryFrames++;
-        else reportData.textFrames++;
-
-        var text = null;
-        if (typeof data === "string") {
-          text = data;
-        } else if (data instanceof ArrayBuffer) {
-          try { text = new TextDecoder("utf-8", { fatal: false }).decode(data); } catch (ignore) {}
-        } else if (data instanceof Blob) {
-          data.arrayBuffer().then(function (buffer) {
-            if (!reportData || !socket) return;
-            handleBinaryText(buffer);
-          });
+      function send(obj, label) {
+        if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+        try {
+          socket.send(JSON.stringify(obj));
+          log({ event: "sent", what: label });
+          return true;
+        } catch (ignore) {
+          run.error = true;
+          log({ event: "send-failed", what: label });
+          return false;
         }
-
-        if (text !== null) {
-          handleText(text, isBinary);
-        } else {
-          reportData.otherFrame = (isBinary ? "binary" : "unknown") + " frame";
-          updateCounters();
-        }
-      }
-
-      function handleBinaryText(value) {
-        var text = value;
-        if (value instanceof ArrayBuffer) {
-          try { text = new TextDecoder("utf-8", { fatal: false }).decode(value); }
-          catch (ignore) { text = ""; }
-        }
-        handleText(text, true);
-        updateCounters();
       }
 
       function handleText(text, isBinary) {
         var message;
-        try {
-          message = JSON.parse(text);
-        } catch (ignore) {
-          reportData.otherFrame = "non-JSON " + (isBinary ? "binary" : "text") +
-            " frame (" + text.length + " characters)";
-          return;
-        }
+        try { message = JSON.parse(text); } catch (ignore) { message = undefined; }
         if (!message || typeof message !== "object" || Array.isArray(message)) {
-          reportData.otherFrame = "non-object JSON frame";
+          run.nonJson.count++;
+          var sample = text.length <= 8 && !/[{}]/.test(text) ? JSON.stringify(text) : text.length + " chars";
+          if (run.nonJson.samples.indexOf(sample) === -1 && run.nonJson.samples.length < 5) {
+            run.nonJson.samples.push(sample);
+          }
+          log({ event: "message", nonJson: true, binary: isBinary, length: text.length });
           return;
         }
-        reportData.jsonMessages++;
-        reportData.keys = Object.keys(message).filter(function (key) {
-          return key.toLowerCase().indexOf("token") === -1;
-        }).slice(0, 40).join(", ");
-        reportData.fields = safeFields(message);
+        run.jsonMessages++;
+        var keys = Object.keys(message);
+        for (var i = 0; i < keys.length; i++) {
+          var key = keys[i];
+          if (/token/i.test(key) && message[key]) run.tokenReceived = true;
+          var value = SENSITIVE.test(key) ? maskInfo(message[key]) : sanitize(message[key], 0);
+          var field = run.fields[key];
+          if (!field) {
+            field = run.fields[key] = { count: 0, value: null };
+          } else {
+            var before = display(field.value);
+            var after = display(value);
+            if (before !== after) addChange({ key: key, from: before, to: after });
+          }
+          field.count++;
+          field.value = value;
+        }
+        log({ event: "message", binary: isBinary, keys: keys });
+      }
+
+      function handleFrame(data) {
+        var isBinary = typeof data !== "string";
+        run.messages++;
+        if (run.firstMessageMs === null) run.firstMessageMs = since();
+        run.lastMessageMs = since();
+        if (isBinary) run.binaryFrames++;
+        else run.textFrames++;
+
+        if (!isBinary) {
+          handleText(data, false);
+        } else if (data instanceof ArrayBuffer) {
+          handleText(new TextDecoder("utf-8").decode(data), true);
+        } else {
+          log({ event: "message", binary: true, unknownType: true });
+        }
+        if (run.connection.indexOf("Open") === 0) run.connection = "Open; messages received";
       }
 
       startButton.addEventListener("click", function () {
@@ -253,95 +456,87 @@
           return;
         }
 
-        reportData = {
-          host: host, connection: "Connecting", elapsed: 0, messages: 0,
-          textFrames: 0, binaryFrames: 0, heartbeats: 0, jsonMessages: 0, keys: "",
-          fields: "", otherFrame: "", closeCode: null, closeReason: "", error: false
+        var duration = Number($("duration").value) || 60;
+        run = {
+          host: host, duration: duration, connection: "Connecting", elapsedMs: 0,
+          openedAtMs: null, firstMessageMs: null, lastMessageMs: null,
+          messages: 0, textFrames: 0, binaryFrames: 0, heartbeats: 0, jsonMessages: 0,
+          nonJson: { count: 0, samples: [] }, fields: {}, timeline: [], timelineDropped: 0,
+          changes: [], changesDropped: 0,
+          tokenRequested: false, tokenReceived: false,
+          closeCode: null, closeReason: "", error: false
         };
-        elapsed = Date.now();
-        document.getElementById("connection").textContent = "Connecting to " + host + ":9999";
-        document.getElementById("copy-status").textContent = "";
-        updateCounters();
+        startedAt = Date.now();
+        $("copy-status").textContent = "";
         setStatus("Connecting to printer…", "neutral");
         startButton.disabled = true;
         stopButton.disabled = false;
+        log({ event: "connect", url: "ws://" + host + ":9999/" });
+        update();
 
         try {
           socket = new WebSocket("ws://" + host + ":9999/");
           socket.binaryType = "arraybuffer";
         } catch (error) {
-          reportData.connection = "Could not create WebSocket: " + error.name;
-          document.getElementById("connection").textContent = reportData.connection;
           setStatus("Could not start the connection.", "bad");
-          stopTest(reportData.connection);
+          stopTest("Could not create WebSocket: " + error.name);
           return;
         }
 
         socket.onopen = function () {
-          if (!reportData) return;
-          reportData.connection = "WebSocket opened";
-          document.getElementById("connection").textContent = "Open";
-          setStatus("Connected. Waiting for printer status messages…", "good");
+          run.openedAtMs = since();
+          run.connection = "Open; waiting for messages";
+          log({ event: "open" });
+          setStatus("Connected. Recording printer status…", "good");
+          $("marker").disabled = false;
+          $("marker-text").disabled = false;
+          if ($("token").checked) {
+            run.tokenRequested = send({ method: "get", params: { getToken: 1 } }, "getToken");
+          }
           heartbeat = window.setInterval(function () {
-            if (!socket || socket.readyState !== WebSocket.OPEN) return;
-            try {
-              socket.send(JSON.stringify({
-                ModeCode: "heart_beat",
-                msg: String(Math.floor(Date.now() / 1000))
-              }));
-              reportData.heartbeats++;
-              updateCounters();
-            } catch (ignore) {
-              reportData.error = true;
-              updateCounters();
+            if (send({ ModeCode: "heart_beat", msg: String(Math.floor(Date.now() / 1000)) }, "heart_beat")) {
+              run.heartbeats++;
             }
           }, 5000);
+          update();
         };
 
         socket.onmessage = function (event) {
-          if (!reportData) return;
-          handleFrame(event.data, typeof event.data !== "string");
-          if (reportData.messages > 0) {
-            reportData.connection = "Open; messages received";
-            document.getElementById("connection").textContent = reportData.connection;
-            setStatus("Connected; printer messages received.", "good");
-          }
-          updateCounters();
+          if (!run) return;
+          handleFrame(event.data);
         };
 
         socket.onerror = function () {
-          if (!reportData) return;
-          reportData.error = true;
-          reportData.connection = "WebSocket error (details hidden by browser)";
-          document.getElementById("connection").textContent = reportData.connection;
-          setStatus("Connection error. See the report; the browser hides the exact cause.", "bad");
-          updateCounters();
+          if (!run) return;
+          run.error = true;
+          log({ event: "error" });
+          setStatus("Connection error. The browser hides the exact cause; see the report.", "bad");
+          update();
         };
 
         socket.onclose = function (event) {
-          if (!reportData) return;
-          reportData.closeCode = event.code;
-          reportData.closeReason = event.reason || "";
-          reportData.connection = "Closed";
-          document.getElementById("connection").textContent =
-            "Closed (code " + event.code + (event.reason ? ", " + event.reason : "") + ")";
-          setStatus("Connection closed. The report has the close code.", "warn");
-          stopTest("Closed (code " + event.code + ")");
+          if (!run) return;
+          run.closeCode = event.code;
+          run.closeReason = event.reason || "";
+          log({ event: "close", code: event.code, reason: event.reason || "" });
+          setStatus("Connection closed by the printer or browser. See the report.", "warn");
+          stopTest("Closed (code " + event.code + ") after " + Math.floor(since() / 1000) + " s");
         };
 
+        ticker = window.setInterval(update, 1000);
+
         deadline = window.setTimeout(function () {
-          if (!reportData) return;
-          if (reportData.messages) {
-            setStatus("Test complete; printer messages were received.", "good");
+          if (run.messages) {
+            setStatus("Test complete; printer messages were recorded.", "good");
             stopTest("Completed; messages received");
           } else if (socket && socket.readyState === WebSocket.OPEN) {
-            setStatus("Socket opened, but no messages arrived during the test.", "warn");
+            setStatus("Socket opened, but no messages arrived.", "warn");
             stopTest("Opened; no messages received");
           } else {
             setStatus("No status messages received; inspect the report.", "bad");
             stopTest("No messages; connection did not remain open");
           }
-        }, 15000);
+        }, duration * 1000);
       });
 
       stopButton.addEventListener("click", function () {
@@ -349,31 +544,64 @@
         stopTest("Stopped by user");
       });
 
-      document.getElementById("copy").addEventListener("click", function () {
-        var text = document.getElementById("report").value;
-        if (!text) {
-          document.getElementById("copy-status").textContent = "Run the test first.";
-          return;
+      function addMarker() {
+        if (!run || !socket) return;
+        var text = $("marker-text").value.trim() || "Marker";
+        addChange({ marker: text.slice(0, 80) });
+        log({ event: "marker", text: text.slice(0, 80) });
+        $("marker-text").value = "";
+        $("marker-text").focus();
+        update();
+      }
+
+      $("marker").addEventListener("click", addMarker);
+      $("marker-text").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") addMarker();
+      });
+      $("hide-noisy").addEventListener("change", function () { if (run) renderChanges(); });
+
+      $("copy").addEventListener("click", function () {
+        var text = $("report").value;
+        if (!text) { $("copy-status").textContent = "Run the test first."; return; }
+        function fallback() {
+          $("report").select();
+          $("copy-status").textContent = "Select and copy the report (Ctrl+C).";
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(function () {
-            document.getElementById("copy-status").textContent = "Report copied.";
-          }, function () {
-            document.getElementById("report").select();
-            document.getElementById("copy-status").textContent = "Select and copy the report.";
-          });
+            $("copy-status").textContent = "Report copied.";
+          }, fallback);
         } else {
-          document.getElementById("report").select();
-          document.getElementById("copy-status").textContent = "Select and copy the report.";
+          fallback();
         }
       });
 
+      $("download").addEventListener("click", function () {
+        if (!run) { $("copy-status").textContent = "Run the test first."; return; }
+        var data = {
+          tool: "Creality Monitor WebSocket diagnostic v2",
+          browser: navigator.userAgent,
+          started: new Date(startedAt).toISOString(),
+          summary: $("report").value.split("\n"),
+          fields: run.fields,
+          changes: run.changes,
+          changesDropped: run.changesDropped,
+          timeline: run.timeline,
+          timelineDropped: run.timelineDropped
+        };
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        var link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "creality-diagnostic-" + new Date(startedAt).toISOString().replace(/[:.]/g, "-") + ".json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+        $("copy-status").textContent = "Log downloaded.";
+      });
+
       window.addEventListener("beforeunload", function () {
-        if (heartbeat) window.clearInterval(heartbeat);
-        if (deadline) window.clearTimeout(deadline);
-        if (socket) {
-          try { socket.close(); } catch (ignore) {}
-        }
+        if (socket) { try { socket.close(); } catch (ignore) {} }
       });
     }());
   </script>
